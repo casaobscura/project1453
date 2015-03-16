@@ -1,0 +1,150 @@
+# Design Assessment Report #
+
+## About 1453 ##
+
+1453 is a real-time strategy game about the early days of the Ottoman Empire. The game will use SDL and its sister libraries under C++. It will run on both Windows and Linux systems natively. Here are a few planned features
+
+  * Single Player Game
+  * Original Graphics, Music and Sounds
+  * Completely a Turkish User Interface
+  * A Challenging Artificial Intelligence
+
+
+## Design Assessments ##
+
+### SDL Libraries ###
+
+Many sister libraries of the SDL library are in use. In the following design approaches, these libraries will be referenced.
+
+  * **SDL\_image:** SDL loads only BMP images. BMP files are uncompressed large files, without support for transparency. SDL\_image lets the usage many common image formats, like JPG and PNG, which allocate less space and PNG have support transparency. Even though these image formats are smaller on disk size, they are the same size when they are drawn with SDL.
+  * **SDL\_gfx:** SDL\_gfx draws geometrical shapes, like lines, empty or filled circles, rectangles and squares.
+  * **SDL\_mixer:** SDL loads only WAV files. Like BMP files, these are uncompressed large files. SDL\_mixer can use common audio formats like OGG and MP3. SDL\_mixer, also has a built-in music channel for effectively playing music during the game. For the game, all audio files are planned to be encoded in OGG.
+  * **SDL\_ttf:** SDL\_ttf lets us use True Type Font files. SDL\_ttf is one of the most important libraries that are used, as it makes the application have a Turkish interface without any trouble.
+
+### GUI Design ###
+
+Although there are a few SDL libraries for GUI, none of them seems to satisfy the project  requirements. The game will have a Turkish interface, but the user interface libraries have a few distinctive problems;
+
+  * they were too old (around 2001) to use with the current version of SDL
+  * they were incomplete
+  * they were too big, or too small
+  * and most importantly, they did not support Turkish characters...
+
+So, it is decided to design a new graphical user interface along with the widgets that are required. The GUI system, which is called SDLGUI as a code name, has a simple design which has small similarities to another GUI toolkit, Qt.
+
+The design is based on a class called `SDLWidget`, which is the base of all the derived classes. `SDLWidget` has basic variables for representing an image on the screen, which are the x, y coordinates, width and height. It also has an `SDL_Surface` which is a basic type of SDL library. `SDL_Surface` is always a pointer to which a surface is held. The surface should be freed with `SDL_FreeSurface(SDL_Surface*)`.
+
+In `SDLWidget`, SDL\_image library is used to be able to load JPG and PNG images. PNG images are mostly used for their transparency.
+
+`SDLLabel`, like all other widgets, is derived from `SDLWidget`. It's one of the base widgets, as it allows the use of any text like an `SDL_Surface`. It uses SDL\_ttf to render these surfaces. It's the widget that makes the application have Turkish characters.
+
+`SDLButton`, is also one of the basic widgets. It is used by almost all of the widgets. The widget has a `clicked` variable, which connects it to any function of any class. This is how the `SDLButton` gets the job done. The library, which is simply called `callback.h` is written by Rich Hickey. `SDLButton`, optionally, may have an `SDLLabel`.
+
+The other derived classes are `SDLProgressBar`, a progress bar suitable for Loading screens and Health Bars of the units, `SDLCheckBox`, a simple checkbox for turning on and off some options. `SDLTextView` is a text area which displays a long text, wrapping it into lines.
+
+`SDLCombo` and `SDLListView` are two classes which use `SDLComboOption` and `SDLListViewItem` respectively as their children widgets, similar to Qt's `QComboBox` and `QListWidget`.
+
+`SDLCommandButton` is a special type of button, which displays information about it when the mouse is hovered on it. This button is mostly designed to be used at the screens of units and buildings.
+
+All widgets have the basic `setPosition(int, int)` function, which puts them on a fixed position on screen. For simplicity a layout manager is not planned.
+
+Having all these widgets, there are two ways to display them on screen. One is to use the `drawWidget()` function, the other one is to add them to an `SDLScreen` which simply holds all types of widgets and displays them in order. `SDLScreen` also passes events to these widgets as each widgets handles these events internally.
+
+Below is a class diagram of these classes:
+
+
+
+![http://img235.imageshack.us/img235/4352/sdlgui1zq7.png](http://img235.imageshack.us/img235/4352/sdlgui1zq7.png)
+
+
+### Application, Game and Player Design ###
+
+Following an object oriented approach, an Application class is designed. During the execution of the program, there is only one Application object. This class wraps the SDL initializing functions. It also holds the screens of the game, which are the derivatives of `SDLScreen` object.
+
+Within these screens, a new `Game` object can be created. `Game` class is also a special case, as there can only be one object of this class during the execution. `Game` has connections to many other classes, some of them are part of `SDLGUI`.
+
+The third class is called `Player`. `Game` has two `Player` variables. One is for the actual player of the game, the other one is the one controlled by the artificial intelligence.
+
+The `Player` class have `Resource`s like `Wood`, `Food` and `Stone`, objects like `Tech`, `BaseUnit` and `BaseBuilding`. These three classes are derived from `BaseObject` while `BaseUnit` and `BaseBuilding` also derive from `BaseGraphicObject`. `BaseGraphicObject`'s most important variable is `Sprite`, which animates images on screen.
+
+All technologies, units and buildings derive from `Tech`, `BaseUnit` and `BaseBuildings` respectively.
+
+Below, there is a class diagram about how these classes are related.
+
+
+![http://img256.imageshack.us/img256/3034/game1iu5.png](http://img256.imageshack.us/img256/3034/game1iu5.png)
+
+
+
+### Map Design ###
+
+SERKAN
+
+### Units, Buildings and Technologies ###
+
+The `Player` class is the one which is controlled by the actual player. One object of this class is controlled by the computer. To win the game, the player class should reach some goals using the resources on the map and his objects.
+
+The base class `BaseObject` holds the information for basic and common variables of these objects. The most important of them are the `Cost`, which is the cost of the object with the combination of three resources on the map; `Wood`, `Food` and `Stone`.
+
+The other important variables is the requirements list. Each object depends on other objects, so before creating the object, the requirements list should be checked.
+
+Technology class `Tech` is not displayed on the map, so `BaseBuilding` and `BaseUnit` are also derived from another class; `BaseGraphicObject` which holds their positions and their display variables.
+
+
+![http://img255.imageshack.us/img255/9982/units1aq9.png](http://img255.imageshack.us/img255/9982/units1aq9.png)
+
+
+
+
+## Basic Classes ##
+
+There are some basic or wrapper classes around SDL and its sister libraries which were not mentioned above.
+
+### SDLFont ###
+
+In the game has font a crucial role. `SDLFont`, is mostly used behind the scenes in `SDLLabel` as a wrapper to `SDL_ttf`. It creates a new `SDL_Surface` and passes it to `SDLLabel`.
+
+Thanks to the SDLFont a lot of important information is transmitted to the player. Buttons and units gain meaning. A perfect combination of the font style, size, color and the graphical user interface lets a game appear more attractive to the user. Since the game is in Turkish `UTF8` encoding have to be used. Having taken these facts to consideration, a font that is appropriate to the user interface and also to the theme of the game will be chosen. While this class will be coded, the `SDL_ttf` library will support all technical aspects needed.
+
+Since the `SDLFont` code is needed to be used in many parts of the project, it is designed as a class whose calling function has the font color and font size as parameters. This saves time and prevents the developer from writing the same code again and again. In the code, first an initialization takes place. The `TTF_OpenFont` enables opening a font from the same file with an arbitrary size. If the font cannot be loaded an error is returned.
+
+To have a clear and plain readability, only the `TTF_STYLE_NORMAL` of `TTF_SetFontStyle` has been chosen. If a glyph cannot be read or there is another problem, the control structure, if statement of `TTF_SizeUTF8` returns an error. Since the quality of the text surface affects also the common appearance of the game, `TTF_RenderUTF8_Blended` was the best choice for rendering. In this statement the text turns to the color, the developer has chosen according to the place of use. Finally, in the `drawMe()` function `SDL_BlitSurface` copies everything from the source surface to the target surface.
+
+### SDLMixer ###
+
+Sounds are another part of the project. When a villager or a soldier is clicked on, some sounds should be played. SDLMixer is the choice to play this kind of sounds and music. Because of the licensing problems of MP3 and the large sizes of WAV files, OGG is the choice of sound format.
+
+There are steps in using SDL\_Mixer
+
+  * Open up the audio device
+  * Load sounds into memory
+  * Play them when necessary
+  * Clean up
+
+This rules used in this code. There is a main class called SDLMixer. In SDLMixer audio formats like OGG and MP3 have to be declared as MixChunk.And musics declared as Mix\_Chunk. This class has functions to play the sound which is called play(), a function to load the file which is loadFile() and another to adjust the sound volume, setVolume(). A sound which mixer will play be checked or be adjusted by SetMixer() function. Finally the allocated memory freed by the destructor ~SDLMixer .
+
+### SDLMusic ###
+
+This class is mostly have static variables, as there can be only one music playing at a time. Also, `SDL_mixer` has a single channel for playing music, so the functions related effects only one variable.
+
+
+## Overall Design ##
+
+The design phase also includes how the game will run.
+
+Real Time Strategy games are being developed more than fifteen years and there are some common approaches on the game play. The most popular are the resource oriented games. In resource oriented games, the player is to gather resources from the map, or process these resources in order to support more units and research new technologies.
+
+Usually this gathering is done by some worker type unit, like engineers or villagers, depending on the set of the game. All units should also be supported by accomodation or in some games by some amount of food. The size of the army mostly depends on these conditions.
+
+To make use of the player's previous experience with real time strategy games, a similar game style is planned. The player will be given a city center and a villager, unless the map sets otherwise, and the player will start producing more units. Having more units means having more resources, and with these resources new technologies, buildings and units will be made available.
+
+The winning conditions of real time strategy games are mostly about destroying the enemy's all units, which is sometimes called a _Death Match_. But in scenario oriented games, there may be different goals for each scenario. For example, keeping a particular unit alive for certain amount of time, or gathering a certain amount of resource, may be enough to win the game.
+
+The games usually occur in open areas, like forests, swamps etc. In 1453, the locations are mostly country sides. Therefore, the field types are; grass, yellow-green grass, dirt, trees, rocky areas and sea. Land units can not walk on water, and sea units can not sail on land, so certain units can occupy certain fields. Land units can not walk through the trees and rocky areas.
+
+The gathering of the resources are crucial to the game play. More resource means more units; so it is common to have scarcity and dependency on resources.
+
+In 1453, there are three resources; Food, Wood and Stone. Wood is gathered from the tree tiles on the map. Each tree tile contains a certain amount of wood, and when this wood is gathered, the tree tile will be displayed as _cut_ and no more wood will be gathered. Food is gathered from the building Farms. Farms can only be built on special type of tile, which is yellow-green grass. This also limits the number of farms that can be built, therefore limiting both the Food resource, and the number of units that can be supported. Finally, Stone is gathered from the Mine. Mines can be built to rocky areas. When built, they get a certain amount of Stone from the surrounding rocky areas.
+
+Using these resources, new buildings, like Barracks can be built to produce warrior units. Building a blacksmith, the player can research upgrades to weaponry and armors. The cost of all of these are defined by the three resources. For example, a house may need 100 Stone and 100 Food. To ease the calculation of these amounts, a `Cost` class is designed. Cost of each object is defined with this `Cost` class.
+
